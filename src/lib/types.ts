@@ -6,6 +6,7 @@ export type Point = {
 export type UserId = {
 	id: string;
 	color: string;
+	name: string;
 };
 
 export type User = UserId & {
