@@ -1,5 +1,5 @@
 import { Channel, Socket } from 'phoenix';
-import type { User, UserId } from './types';
+import type { NewPosEvent, User } from './types';
 
 const WS_ENDPOINT_URL = 'ws://localhost:4000/socket';
 
@@ -10,8 +10,8 @@ export function joinSocket() {
 		onJoin,
 		onNewPos
 	}: {
-		onJoin: (pos: UserId) => void;
-		onNewPos: (pos: User) => void;
+		onJoin: (pos: User) => void;
+		onNewPos: (pos: NewPosEvent) => void;
 	}) {
 		const socket = new Socket(WS_ENDPOINT_URL);
 		socket.connect();
@@ -32,7 +32,7 @@ export function joinSocket() {
 		channel.on('new_pos', onNewPos);
 	}
 
-	function sendNewPos(move: User) {
+	function sendNewPos(move: NewPosEvent) {
 		channel?.push('new_pos', move);
 	}
 

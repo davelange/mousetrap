@@ -3,19 +3,20 @@ export type Point = {
 	y: number;
 };
 
-export type UserId = {
+export type User = Point & {
 	id: string;
 	color: string;
 	name: string;
 };
 
-export type User = UserId & {
-	x: number;
-	y: number;
+export type Move = {
+	points: Array<Point>;
+	id: string;
 };
 
-export type Move = User & {
-	step: number;
-	duration: number;
-	initialPos: Point;
+export type NewPosEvent = {
+	id: string;
+	color: string;
+	name: string;
+	points: Array<Point>;
 };

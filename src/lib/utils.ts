@@ -1,4 +1,4 @@
-export function throttle<T>(fn: (args: T) => void, interval: number) {
+export function throttle<T = void>(fn: (args: T) => void, interval: number) {
 	let enabled = true;
 	let debounceTimeout: ReturnType<typeof setTimeout>;
 
@@ -10,7 +10,7 @@ export function throttle<T>(fn: (args: T) => void, interval: number) {
 	return (args: T) => {
 		clearTimeout(debounceTimeout);
 
-		debounceTimeout = setTimeout(() => fn(args), interval * 2);
+		debounceTimeout = setTimeout(() => fn(args), interval);
 
 		if (enabled) {
 			startTimer();
