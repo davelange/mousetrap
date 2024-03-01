@@ -32,6 +32,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"lazy-brush": "^2.0.1",
 		"phoenix": "^1.7.11"
 	}
 }

@@ -2,22 +2,24 @@
 	import { Canvas } from '$lib/canvas';
 	import { User } from '$lib/user';
 	import { joinSocket } from '$lib/socket';
-	import type { Point, NewPosEvent } from '$lib/types';
+	import type { NewPosEvent } from '$lib/types';
 	import { throttle } from '$lib/utils';
 	import { onMount } from 'svelte';
 
 	let canvasEl: HTMLCanvasElement;
 	let canvas: Canvas;
-	let currentUser = { id: '', color: '' };
-	let name = '';
-	let users: Record<string, User> = {};
 
-	let currentMovePoints: Array<Point> = [];
+	let userId = '';
+	let users: Record<string, User> = {};
 	let mouseIsDown = false;
+
+	$: user = users[userId];
 
 	let { connect, sendNewPos } = joinSocket();
 
 	function onNewPos(evt: NewPosEvent) {
+		if (evt.id === userId) return;
+
 		if (!(evt.id in users)) {
 			users[evt.id] = new User(evt);
 		} else {
@@ -58,31 +60,34 @@
 	}
 
 	function pushNewPosition() {
-		if (!currentMovePoints.length) return;
+		if (!user.currentMoveBatch.length) return;
 
 		sendNewPos({
-			...currentUser,
-			points: currentMovePoints,
-			name
+			...user,
+			points: user.currentMoveBatch
 		});
-		currentMovePoints = [];
+		user.currentMoveBatch = [];
 	}
 
 	let debouncedSend = throttle(pushNewPosition, 200);
 
 	function handleMousemove(event: MouseEvent) {
-		currentMovePoints.push({
-			x: Math.round(event.clientX),
-			y: Math.round(event.clientY),
-			mouseIsDown
-		});
-		debouncedSend();
+		if (user) {
+			user.handleMousemove(event, mouseIsDown);
+			debouncedSend();
+		}
 	}
 
 	onMount(() => {
 		connect({
 			onJoin: (data) => {
-				currentUser = data;
+				userId = data.id;
+				users[data.id] = new User({
+					id: data.id,
+					color: '',
+					name: '',
+					points: []
+				});
 			},
 			onNewPos
 		});
@@ -115,6 +120,5 @@
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		border: 1px solid red;
 	}
 </style>

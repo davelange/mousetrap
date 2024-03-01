@@ -7,6 +7,7 @@ export class User {
 	x: number;
 	y: number;
 	points: Array<Point>;
+	currentMoveBatch: Array<Point> = [];
 	shapes: {
 		points: Array<Point>;
 		isClosed: boolean;
@@ -15,10 +16,11 @@ export class User {
 
 	constructor(event: NewPosEvent) {
 		this.id = event.id;
-		this.color = event.color;
+		// this.color = event.color;
+		this.color = 'tomato';
 		this.name = event.name;
-		this.x = event.points?.[0].x;
-		this.y = event.points?.[0].y;
+		this.x = event.points?.[0]?.x;
+		this.y = event.points?.[0]?.y;
 		this.points = event.points;
 		this.shapes = [];
 	}
@@ -29,6 +31,17 @@ export class User {
 
 	addNewPoints(points: Point[]) {
 		this.points.push(...points);
+	}
+
+	handleMousemove(event: MouseEvent, mouseIsDown: boolean) {
+		const point = {
+			x: Math.round(event.clientX),
+			y: Math.round(event.clientY),
+			mouseIsDown
+		};
+
+		this.currentMoveBatch.push(point);
+		this.addNewPoints([point]);
 	}
 
 	updatePos(point: Point) {
@@ -42,11 +55,13 @@ export class User {
 			return;
 		}
 
-		if (this.isDrawing) {
-			this.shapes[this.shapes.length - 1].points.push(point);
-		} else {
+		const startNewShape = !this.isDrawing;
+
+		if (startNewShape) {
 			this.shapes.push({ points: [point], isClosed: false });
 			this.isDrawing = true;
+		} else {
+			this.shapes[this.shapes.length - 1].points.push(point);
 		}
 	}
 }
