@@ -1,5 +1,6 @@
 import { Channel, Socket } from 'phoenix';
-import type { NewPosEvent, User } from './types';
+import type { NewPosEvent } from './types';
+import type { User } from './user';
 
 const WS_ENDPOINT_URL = 'ws://localhost:4000/socket';
 

@@ -1,124 +1,23 @@
 <script lang="ts">
-	import { Canvas } from '$lib/canvas';
-	import { User } from '$lib/user';
-	import { joinSocket } from '$lib/socket';
-	import type { NewPosEvent } from '$lib/types';
-	import { throttle } from '$lib/utils';
-	import { onMount } from 'svelte';
+	import type { EventHandler } from 'svelte/elements';
+	import Scene from '../components/Scene.svelte';
 
-	let canvasEl: HTMLCanvasElement;
-	let canvas: Canvas;
+	let name: string;
+	let color: string;
 
-	let userId = '';
-	let users: Record<string, User> = {};
-	let mouseIsDown = false;
-
-	$: user = users[userId];
-
-	let { connect, sendNewPos } = joinSocket();
-
-	function onNewPos(evt: NewPosEvent) {
-		if (evt.id === userId) return;
-
-		if (!(evt.id in users)) {
-			users[evt.id] = new User(evt);
-		} else {
-			users[evt.id].addNewPoints(evt.points);
-		}
-	}
-
-	function drawUsers() {
-		canvas.clear();
-
-		let list = Object.values(users);
-
-		list.forEach((user) => {
-			canvas.drawUser(user);
-			canvas.drawPath(user);
-		});
-	}
-
-	function processAnimationPool() {
-		let list = Object.values(users);
-
-		for (let index = 0; index < list.length; index++) {
-			const user = list[index];
-			const movePoint = user.nextPoint();
-
-			if (!movePoint) {
-				continue;
-			}
-
-			user.updatePos(movePoint);
-			user.addPathPoint(movePoint);
-			user.points.shift();
-		}
-
-		drawUsers();
-
-		requestAnimationFrame(processAnimationPool);
-	}
-
-	function pushNewPosition() {
-		if (!user.currentMoveBatch.length) return;
-
-		sendNewPos({
-			...user,
-			points: user.currentMoveBatch
-		});
-		user.currentMoveBatch = [];
-	}
-
-	let debouncedSend = throttle(pushNewPosition, 200);
-
-	function handleMousemove(event: MouseEvent) {
-		if (user) {
-			user.handleMousemove(event, mouseIsDown);
-			debouncedSend();
-		}
-	}
-
-	onMount(() => {
-		connect({
-			onJoin: (data) => {
-				userId = data.id;
-				users[data.id] = new User({
-					id: data.id,
-					color: '',
-					name: '',
-					points: []
-				});
-			},
-			onNewPos
-		});
-
-		canvas = new Canvas(canvasEl);
-
-		requestAnimationFrame(processAnimationPool);
-	});
+	const handleSubmit: EventHandler<SubmitEvent, HTMLFormElement> = (event) => {
+		const data = new FormData(event.currentTarget);
+		name = data.get('name') as string;
+		color = data.get('color') as string;
+	};
 </script>
 
-<svelte:window on:resize={() => canvas.handleResize} />
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-	class="root"
-	on:mousemove={throttle(handleMousemove, 10)}
-	on:mousedown={() => (mouseIsDown = true)}
-	on:mouseup={() => (mouseIsDown = false)}
->
-	<canvas class="canvas" bind:this={canvasEl}></canvas>
-</div>
-
-<style>
-	.root {
-		font-family: system-ui, sans-serif;
-		height: 100%;
-		background-color: #eee;
-		display: flex;
-	}
-	.canvas {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+{#if name && color}
+	<Scene {name} {color} />
+{:else}
+	<form action="" on:submit|preventDefault={handleSubmit}>
+		<input type="text" name="name" placeholder="Name" required />
+		<input type="color" name="color" required />
+		<button type="submit">Go</button>
+	</form>
+{/if}

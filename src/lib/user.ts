@@ -16,8 +16,7 @@ export class User {
 
 	constructor(event: NewPosEvent) {
 		this.id = event.id;
-		// this.color = event.color;
-		this.color = 'tomato';
+		this.color = event.color;
 		this.name = event.name;
 		this.x = event.points?.[0]?.x;
 		this.y = event.points?.[0]?.y;
