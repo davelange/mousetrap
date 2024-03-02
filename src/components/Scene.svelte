@@ -7,7 +7,6 @@
 	import { onMount } from 'svelte';
 
 	export let name: string;
-	export let color: string;
 
 	let canvasEl: HTMLCanvasElement;
 	let canvas: Canvas;
@@ -24,19 +23,13 @@
 		if (evt.id === userId) return;
 
 		if (!(evt.id in users)) {
-			users[evt.id] = new User(evt);
+			users[evt.id] = new User({
+				...evt,
+				isLocalUser: false
+			});
 		} else {
-			users[evt.id].addNewPoints(evt.points);
+			users[evt.id].points.push(...evt.points);
 		}
-	}
-
-	function render() {
-		canvas.clear();
-
-		Object.values(users).forEach((user) => {
-			canvas.renderUser(user);
-			canvas.renderUserShapes(user);
-		});
 	}
 
 	function processAnimationPool() {
@@ -44,37 +37,35 @@
 
 		for (let index = 0; index < list.length; index++) {
 			const user = list[index];
-			const movePoint = user.nextPoint();
 
-			if (!movePoint) {
-				continue;
-			}
+			canvas.clear();
 
-			user.updatePos(movePoint);
-			user.addPathPoint(movePoint);
-			user.points.shift();
+			user.updatePosition();
+			user.addPointToShape();
+			user.clearPoint();
+			canvas.render(user);
 		}
-
-		render();
 
 		requestAnimationFrame(processAnimationPool);
 	}
 
 	function pushNewPosition() {
-		if (!user.currentMoveBatch.length) return;
+		if (!user.pointsQueue.length) return;
 
 		sendNewPos({
-			...user,
-			points: user.currentMoveBatch
+			id: user.id,
+			name: user.name,
+			points: user.pointsQueue
 		});
-		user.currentMoveBatch = [];
+
+		user.pointsQueue = [];
 	}
 
 	let debouncedSend = throttle(pushNewPosition, 200);
 
 	function handleMousemove(event: MouseEvent) {
 		if (user) {
-			user.handleMousemove(event, mouseIsDown);
+			user?.handleMousemove(event, mouseIsDown);
 			debouncedSend();
 		}
 	}
@@ -86,8 +77,8 @@
 				users[userId] = new User({
 					id: userId,
 					name,
-					color,
-					points: []
+					points: [],
+					isLocalUser: true
 				});
 			},
 			onNewPos
@@ -103,7 +94,7 @@
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
 	class="root"
-	on:mousemove={throttle(handleMousemove, 10)}
+	on:mousemove={throttle(handleMousemove, 5)}
 	on:mousedown={() => (mouseIsDown = true)}
 	on:mouseup={() => (mouseIsDown = false)}
 >

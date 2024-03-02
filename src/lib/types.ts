@@ -11,7 +11,6 @@ export type Move = {
 
 export type NewPosEvent = {
 	id: string;
-	color: string;
 	name: string;
 	points: Array<Point>;
 };

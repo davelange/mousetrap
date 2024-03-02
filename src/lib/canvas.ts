@@ -1,3 +1,4 @@
+import type { Point } from './types';
 import type { User } from './user';
 
 export class Canvas {
@@ -22,24 +23,31 @@ export class Canvas {
 	}
 
 	renderUser(user: User) {
-		this.context.lineWidth = 1;
-		this.context.strokeStyle = user.color;
+		this.context.lineWidth = 2;
+		this.context.strokeStyle = '#333'; // user.color;
 		this.context.beginPath();
 		this.context.ellipse(user.x, user.y, 10, 10, 0, 0, 2 * Math.PI);
 		this.context.stroke();
 	}
 
 	renderUserShapes(user: User) {
-		this.context.strokeStyle = user.color;
+		this.context.strokeStyle = '#333'; //user.color;
 		this.context.lineWidth = 16;
 
 		user.shapes.forEach((shape) => {
 			if (!shape.points.length) return;
 
-			this.context.beginPath();
 			this.context.moveTo(shape.points[0].x, shape.points[0].y);
+			this.context.beginPath();
+
 			shape.points.forEach((point) => this.context.lineTo(point.x, point.y));
+
 			this.context.stroke();
 		});
+	}
+
+	render(user: User) {
+		this.renderUser(user);
+		this.renderUserShapes(user);
 	}
 }

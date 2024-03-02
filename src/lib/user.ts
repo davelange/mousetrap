@@ -1,35 +1,30 @@
 import type { NewPosEvent, Point } from './types';
 
+type UserOptions = NewPosEvent & {
+	isLocalUser?: boolean;
+};
+
 export class User {
 	id: string;
-	color: string;
+	isLocalUser = false;
 	name: string;
 	x: number;
 	y: number;
 	points: Array<Point>;
-	currentMoveBatch: Array<Point> = [];
-	shapes: {
+	pointsQueue: Array<Point> = [];
+	shapes: Array<{
 		points: Array<Point>;
 		isClosed: boolean;
-	}[] = [];
+	}> = [];
 	isDrawing = false;
 
-	constructor(event: NewPosEvent) {
-		this.id = event.id;
-		this.color = event.color;
-		this.name = event.name;
-		this.x = event.points?.[0]?.x;
-		this.y = event.points?.[0]?.y;
-		this.points = event.points;
-		this.shapes = [];
-	}
-
-	nextPoint() {
-		return this.points?.[0];
-	}
-
-	addNewPoints(points: Point[]) {
-		this.points.push(...points);
+	constructor(options: UserOptions) {
+		this.id = options.id;
+		this.name = options.name;
+		this.x = options.points?.[0]?.x;
+		this.y = options.points?.[0]?.y;
+		this.points = options.points;
+		this.isLocalUser = options.isLocalUser || false;
 	}
 
 	handleMousemove(event: MouseEvent, mouseIsDown: boolean) {
@@ -39,16 +34,42 @@ export class User {
 			mouseIsDown
 		};
 
-		this.currentMoveBatch.push(point);
-		this.addNewPoints([point]);
+		this.pointsQueue.push(point);
+		this.points.push(point);
 	}
 
-	updatePos(point: Point) {
-		this.x = point.x;
-		this.y = point.y;
+	getNextPoint() {
+		if (!this.points.length) {
+			return {
+				x: this.x,
+				y: this.y,
+				mouseIsDown: false
+			};
+		}
+
+		if (this.isLocalUser) {
+			return this.points[this.points.length - 1];
+		}
+
+		return this.points[0];
 	}
 
-	addPathPoint(point: Point) {
+	clearPoint() {
+		if (this.points.length > 1) {
+			this.points.shift();
+		}
+	}
+
+	updatePosition() {
+		const p = this.getNextPoint();
+
+		this.x = p?.x;
+		this.y = p?.y;
+	}
+
+	addPointToShape() {
+		const point = this.getNextPoint();
+
 		if (!point.mouseIsDown) {
 			this.isDrawing = false;
 			return;
