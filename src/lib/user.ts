@@ -10,7 +10,7 @@ type Shape = {
 	color: string;
 };
 
-const CHUNK_POINTS_THRESHOLD = 10;
+const CHUNK_POINTS_THRESHOLD = 3;
 
 export class User {
 	id: string;
@@ -56,13 +56,15 @@ export class User {
 		}
 
 		if (this.points.length > CHUNK_POINTS_THRESHOLD) {
-			const diffInRange = this.points.findIndex(
-				(item, _idx, arr) => item.mouseIsDown !== arr[0].mouseIsDown
-			);
+			const safeChunkLastIdx = this.points
+				.slice(0, CHUNK_POINTS_THRESHOLD)
+				.findIndex(
+					(item, _idx, arr) => item.mouseIsDown !== arr[0].mouseIsDown
+				);
 
 			return this.points.slice(
 				0,
-				Math.min(diffInRange, CHUNK_POINTS_THRESHOLD)
+				safeChunkLastIdx === -1 ? CHUNK_POINTS_THRESHOLD : safeChunkLastIdx
 			);
 		}
 

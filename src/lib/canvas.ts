@@ -30,7 +30,7 @@ export class Canvas {
 	}
 
 	renderUserShapes(user: User) {
-		this.context.lineWidth = 16;
+		this.context.lineWidth = 20;
 
 		user.shapes.forEach((shape) => {
 			if (!shape.points.length) return;

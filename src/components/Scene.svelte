@@ -6,6 +6,8 @@
 	import { throttle } from '$lib/utils';
 	import { onMount } from 'svelte';
 
+	const SEND_POS_INTERVAL = 200;
+
 	export let name: string;
 
 	let canvasEl: HTMLCanvasElement;
@@ -45,7 +47,6 @@
 
 		for (let index = 0; index < list.length; index++) {
 			const user = list[index];
-
 			user.handleFrame();
 			canvas.render(user);
 		}
@@ -66,7 +67,7 @@
 		user.pointsQueue = [];
 	}
 
-	let debouncedSend = throttle(pushNewPosition, 100);
+	let debouncedSend = throttle(pushNewPosition, SEND_POS_INTERVAL);
 
 	function handleMousemove(event: MouseEvent) {
 		if (user) {
