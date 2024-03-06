@@ -1,5 +1,5 @@
 import { Channel, Socket } from 'phoenix';
-import type { NewPosEvent } from './types';
+import type { NewPosEvent, UndoShapeEvent } from './types';
 import type { User } from './user';
 
 const WS_ENDPOINT_URL = 'ws://localhost:4000/socket';
@@ -9,10 +9,12 @@ export function joinSocket() {
 
 	function connect({
 		onJoin,
-		onNewPos
+		onNewPos,
+		onUndoShape
 	}: {
-		onJoin: (pos: User) => void;
+		onJoin: (pos: User & { color: string }) => void;
 		onNewPos: (pos: NewPosEvent) => void;
+		onUndoShape: (event: UndoShapeEvent) => void;
 	}) {
 		const socket = new Socket(WS_ENDPOINT_URL);
 		socket.connect();
@@ -29,13 +31,18 @@ export function joinSocket() {
 				console.log('Unable to join', resp);
 			});
 
-		// Attach listener for new_pos event
+		// Attach listeners
 		channel.on('new_pos', onNewPos);
+		channel.on('undo_shape', onUndoShape);
 	}
 
 	function sendNewPos(move: NewPosEvent) {
 		channel?.push('new_pos', move);
 	}
 
-	return { connect, sendNewPos };
+	function sendUndoShape(data: UndoShapeEvent) {
+		channel?.push('undo_shape', data);
+	}
+
+	return { connect, sendNewPos, sendUndoShape };
 }

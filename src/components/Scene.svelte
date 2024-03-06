@@ -2,7 +2,7 @@
 	import { Canvas } from '$lib/canvas';
 	import { User } from '$lib/user';
 	import { joinSocket } from '$lib/socket';
-	import type { NewPosEvent } from '$lib/types';
+	import type { NewPosEvent, UndoShapeEvent } from '$lib/types';
 	import { throttle } from '$lib/utils';
 	import { onMount } from 'svelte';
 
@@ -10,14 +10,14 @@
 
 	let canvasEl: HTMLCanvasElement;
 	let canvas: Canvas;
-
 	let userId = '';
 	let users: Record<string, User> = {};
 	let mouseIsDown = false;
+	let currentColor = '#000000';
 
 	$: user = users[userId];
 
-	let { connect, sendNewPos } = joinSocket();
+	let { connect, sendNewPos, sendUndoShape } = joinSocket();
 
 	function onNewPos(evt: NewPosEvent) {
 		if (evt.id === userId) return;
@@ -32,17 +32,21 @@
 		}
 	}
 
+	function onUndoShape(evt: UndoShapeEvent) {
+		if (evt.userId === userId) return;
+
+		users[evt.userId].undoShape();
+	}
+
 	function processAnimationPool() {
 		let list = Object.values(users);
+
+		canvas.clear();
 
 		for (let index = 0; index < list.length; index++) {
 			const user = list[index];
 
-			canvas.clear();
-
-			user.updatePosition();
-			user.addPointToShape();
-			user.clearPoint();
+			user.handleFrame();
 			canvas.render(user);
 		}
 
@@ -54,6 +58,7 @@
 
 		sendNewPos({
 			id: user.id,
+			trackerColor: user.trackerColor,
 			name: user.name,
 			points: user.pointsQueue
 		});
@@ -61,12 +66,19 @@
 		user.pointsQueue = [];
 	}
 
-	let debouncedSend = throttle(pushNewPosition, 200);
+	let debouncedSend = throttle(pushNewPosition, 100);
 
 	function handleMousemove(event: MouseEvent) {
 		if (user) {
-			user?.handleMousemove(event, mouseIsDown);
+			user?.handleMousemove(event, mouseIsDown, currentColor);
 			debouncedSend();
+		}
+	}
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.code === 'KeyZ' && event.metaKey && !user.isDrawing) {
+			user.undoShape();
+			sendUndoShape({ userId });
 		}
 	}
 
@@ -78,10 +90,12 @@
 					id: userId,
 					name,
 					points: [],
-					isLocalUser: true
+					isLocalUser: true,
+					trackerColor: data.color
 				});
 			},
-			onNewPos
+			onNewPos,
+			onUndoShape
 		});
 
 		canvas = new Canvas(canvasEl);
@@ -90,7 +104,10 @@
 	});
 </script>
 
-<svelte:window on:resize={() => canvas.handleResize} />
+<svelte:window
+	on:resize={() => canvas.handleResize}
+	on:keydown={handleKeyDown}
+/>
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
 	class="root"
@@ -99,6 +116,10 @@
 	on:mouseup={() => (mouseIsDown = false)}
 >
 	<canvas class="canvas" bind:this={canvasEl}></canvas>
+
+	<div style="position: absolute; z-index: 10">
+		<input type="color" bind:value={currentColor} />
+	</div>
 </div>
 
 <style>

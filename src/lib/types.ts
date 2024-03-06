@@ -2,6 +2,7 @@ export type Point = {
 	x: number;
 	y: number;
 	mouseIsDown: boolean;
+	color: string;
 };
 
 export type Move = {
@@ -12,5 +13,10 @@ export type Move = {
 export type NewPosEvent = {
 	id: string;
 	name: string;
+	trackerColor: string;
 	points: Array<Point>;
+};
+
+export type UndoShapeEvent = {
+	userId: string;
 };
